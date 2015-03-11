@@ -1,47 +1,66 @@
 import cv2
 import numpy as np
+import sys
+import time
+
+def onmouse(event, x, y, flags, param):
+    if flags & cv2.EVENT_FLAG_LBUTTON:
+        global click, ux, uy, lx, ly
+        if click and x>lx and y>ly:
+            ux = x
+            uy = y
+            click = False
+        else:
+            lx = x
+            ly = y
+            click = True
+
+cv2.namedWindow("img", 0)
+cv2.setMouseCallback("img", onmouse)
 
 capture = cv2.VideoCapture()
 capture.open(0)
 
-newx = 320
-newy = 240
-
-nx = 640
-ny = 480
+lx,ly,ux,uy = [100,100,110,110]
+click = False
+t = time.time()
+freq = 999999999999999999
 
 f1 = open('mins', 'w')
 f2 = open('maxs', 'w')
+f3 = open('time', 'w')
+f3.write('i	time	frequency\n')
+counter = 0
 while(1):
-    frame = np.zeros((newx,newy,3), np.uint8)
+    tdiff = time.time()-t
+    t = time.time()
+    if(tdiff!=0):
+      freq = 1/tdiff
+    counter = counter + 1
+    frame = np.zeros((320,240,3), np.uint8)
     ret, frame = capture.read()
-#    frameBGR = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    minh,mins,minv = np.amin(np.amin(hsv[195:200,125:130],axis=0),axis=0)
-    maxh,maxs,maxv = np.amax(np.amax(hsv[195:200,125:130],axis=0),axis=0)
-    upper_white = np.array([maxh,maxs,maxv], dtype=np.uint8)
-    lower_white = np.array([minh,mins,minv], dtype=np.uint8)
-    f1.write(str(minh)+','+str(mins)+','+str(minv)+'\n')
-    f2.write(str(maxh)+','+str(maxs)+','+str(maxv)+'\n')
-    # Threshold the HSV image to get only white colors
-    mask = cv2.inRange(hsv, lower_white, upper_white)
-    # Bitwise-AND mask and original image
-    mom = cv2.moments(mask, True)
-    xf = int(mom['m10']/mom['m00'])
-    yf = int(mom['m01']/mom['m00'])
-    cv2.circle(frame, (xf,yf), 5, (255,0,255), -1)
-    cv2.circle(frame, (125,195), 1, (255,0,255), -1)
-    cv2.circle(frame, (130,195), 1, (255,0,255), -1)
-    cv2.circle(frame, (125,200), 1, (255,0,255), -1)
-    cv2.circle(frame, (130,200), 1, (255,0,255), -1)
-    cv2.circle(mask, (125,195), 1, (255,0,255), -1)
-    cv2.circle(mask, (130,195), 1, (255,0,255), -1)
-    cv2.circle(mask, (125,200), 1, (255,0,255), -1)
-    cv2.circle(mask, (130,200), 1, (255,0,255), -1)
-    cv2.imshow('frame',frame)
-    cv2.imshow('mask',mask)
-    print(xf, yf)
+    if(not click):
+        minh,mins,minv = np.amin(np.amin(hsv[ly:uy,lx:ux],axis=0),axis=0)
+        maxh,maxs,maxv = np.amax(np.amax(hsv[ly:uy,lx:ux],axis=0),axis=0)
+        lower_thresh = np.array([minh,mins,minv], dtype=np.uint8)
+        upper_thresh = np.array([maxh,maxs,maxv], dtype=np.uint8)
+        f1.write(str(minh)+','+str(mins)+','+str(minv)+'\n')
+        f2.write(str(maxh)+','+str(maxs)+','+str(maxv)+'\n')
+	f3.write(str(counter)+':	'+str(tdiff)+
+                 '	'+str(freq)+'\n')
+        mask = cv2.inRange(hsv, lower_thresh, upper_thresh)
+        mom = cv2.moments(mask, True)
+        xf = int(mom['m10']/mom['m00'])
+        yf = int(mom['m01']/mom['m00'])
+        cv2.circle(frame, (xf,yf), 1, (255,0,255), -1)
+        cv2.rectangle(frame, (lx,ly), (ux,uy), (0,255,0), 0, 8)
+        cv2.rectangle(mask, (lx,ly), (ux,uy), (255,255,255), 0, 8)
+    else:
+        cv2.circle(frame, (xf,yf), 5, (255,0,255), -1)
+        cv2.circle(frame, (lx, ly), 1, (0,255,0), -1)
+    cv2.imshow("img",frame)
+    cv2.imshow("mask",mask)
 #    print("mins")
 #    print(minh,mins,minv)
 #    print("maxs")
