@@ -26,10 +26,8 @@ click = False
 t = time.time()
 freq = 999999999999999999
 
-f1 = open('mins', 'w')
-f2 = open('maxs', 'w')
-f3 = open('time', 'w')
-f3.write('i	time	frequency\n')
+f1 = open('./Maxs/mins', 'w')
+f2 = open('./Maxs/maxs', 'w')
 counter = 0
 while(1):
     tdiff = time.time()-t
@@ -49,8 +47,6 @@ while(1):
         f2.seek(0)
         f1.write(str(minh)+'\n'+str(mins)+'\n'+str(minv)+'\n')
         f2.write(str(maxh)+'\n'+str(maxs)+'\n'+str(maxv)+'\n')
-	f3.write(str(counter)+':	'+str(tdiff)+
-                 '	'+str(freq)+'\n')
         mask = cv2.inRange(hsv, lower_thresh, upper_thresh)
         mom = cv2.moments(mask, True)
         xf = int(mom['m10']/mom['m00'])
@@ -63,10 +59,6 @@ while(1):
         cv2.circle(frame, (lx, ly), 1, (0,255,0), -1)
     cv2.imshow("img",frame)
     cv2.imshow("mask",mask)
-#    print("mins")
-#    print(minh,mins,minv)
-#    print("maxs")
-#    print(maxh,maxs,maxv)
     k = cv2.waitKey(5) & 0xFF
     if k == 27:
         break

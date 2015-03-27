@@ -38,10 +38,8 @@ cv2.normalize(roi_hist,roi_hist,0,255,cv2.NORM_MINMAX)
 
 term_crit = (cv2.TERM_CRITERIA_EPS|cv2.TERM_CRITERIA_COUNT,10,1)
 
-f1 = open('mins', 'w')
-f2 = open('maxs', 'w')
-f3 = open('time', 'w')
-f3.write('i	time	frequency\n')
+f1 = open('./Maxs/mins', 'w')
+f2 = open('./Maxs/maxs', 'w')
 counter = 0
 kern4 = np.ones((4,4),np.uint8)
 while(1):

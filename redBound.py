@@ -5,8 +5,8 @@ import time
 
 capture = cv2.VideoCapture()
 capture.open(0)
-maxf = open('maxs','r')
-minf = open('mins','r')
+maxf = open('./Maxs/maxs','r')
+minf = open('./Maxs/mins','r')
 maxh = maxf.readline()
 maxs = maxf.readline()
 maxv = maxf.readline()

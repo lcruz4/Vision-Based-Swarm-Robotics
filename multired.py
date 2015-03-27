@@ -13,8 +13,8 @@ while(1):
   ret, frame = capture.read()
   hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-  redmax = open('maxs','r')
-  redmin = open('mins','r')
+  redmax = open('./Maxs/maxs','r')
+  redmin = open('./Maxs/mins','r')
   maxh = redmax.readline()
   maxs = redmax.readline()
   maxv = redmax.readline()
