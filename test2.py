@@ -16,7 +16,8 @@ def onmouse(event, x, y, flags, param):
 
 cv2.namedWindow("img", 0)
 cv2.setMouseCallback("img", onmouse)
-
+r,h,c,w = 100, 100,100,100
+track_window = (c,r,w,h)
 capture = cv2.VideoCapture()
 capture.open(0)
 lx,ly,ux,uy = [100,100,110,110]
@@ -29,6 +30,7 @@ f2 = open('maxs', 'w')
 f3 = open('time', 'w')
 f3.write('i	time	frequency\n')
 counter = 0
+kern4 = np.ones((4,4),np.uint8)
 while(1):
     tdiff = time.time()-t
     t = time.time()
@@ -50,22 +52,21 @@ while(1):
 	f3.write(str(counter)+':	'+str(tdiff)+
                  '	'+str(freq)+'\n')
         mask = cv2.inRange(hsv, lower_thresh, upper_thresh)
-        mom = cv2.moments(mask, True)
-#        print(mom['m00'],mom['m01'],mom['m02'],mom['m03'])
-#        print(mom['m10'],mom['m11'],mom['m12'])
-#        print(mom['m20'],mom['m21'])
-#        print(mom['m30'])
-        xf = int(mom['m20']/mom['m00'])
-        yf = int(mom['m02']/mom['m00'])
-        cv2.circle(frame, (xf,yf), 1, (255,0,255), -1)
+        mask1 = cv2.inRange(hsv, lower_thresh, upper_thresh)
+        #mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kern4)
+        
+        cv2.rectangle(mask1, (lx,ly), (ux,uy), (255,255,255), 0, 8)
+        cv2.imshow("mask1",mask1)
+        con, hie = cv2.findContours(mask,1,2)
+        M = cv2.moments(con[0])
+        if(M['m00']!=0):
+          cx = int(M['m10']/M['m00'])
+          cy = int(M['m01']/M['m00'])
+          cv2.circle(frame, (cx,cy), 1, (255,0,255), -1)
         cv2.rectangle(frame, (lx,ly), (ux,uy), (0,255,0), 0, 8)
-        cv2.rectangle(mask, (lx,ly), (ux,uy), (255,255,255), 0, 8)
-    else:
-        cv2.circle(frame, (xf,yf), 5, (255,0,255), -1)
-        cv2.circle(frame, (lx, ly), 1, (0,255,0), -1)
+    cv2.rectangle(frame, (c,r), (c+w,r+h), 255,2)
     cv2.imshow("img",frame)
     cv2.imshow("mask",mask)
-    time.sleep(1)
 #    print("mins")
 #    print(minh,mins,minv)
 #    print("maxs")

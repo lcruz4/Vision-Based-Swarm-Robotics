@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 import sys
 import time
-
 def onmouse(event, x, y, flags, param):
     if flags & cv2.EVENT_FLAG_LBUTTON:
         global click, ux, uy, lx, ly
@@ -20,7 +19,8 @@ cv2.setMouseCallback("img", onmouse)
 
 capture = cv2.VideoCapture()
 capture.open(0)
-
+capture.set(11,.1)
+print('10:BRIGHT', capture.get(11))
 lx,ly,ux,uy = [100,100,110,110]
 click = False
 t = time.time()
@@ -45,8 +45,10 @@ while(1):
         maxh,maxs,maxv = np.amax(np.amax(hsv[ly:uy,lx:ux],axis=0),axis=0)
         lower_thresh = np.array([minh,mins,minv], dtype=np.uint8)
         upper_thresh = np.array([maxh,maxs,maxv], dtype=np.uint8)
-        f1.write(str(minh)+','+str(mins)+','+str(minv)+'\n')
-        f2.write(str(maxh)+','+str(maxs)+','+str(maxv)+'\n')
+        f1.seek(0)
+        f2.seek(0)
+        f1.write(str(minh)+'\n'+str(mins)+'\n'+str(minv)+'\n')
+        f2.write(str(maxh)+'\n'+str(maxs)+'\n'+str(maxv)+'\n')
 	f3.write(str(counter)+':	'+str(tdiff)+
                  '	'+str(freq)+'\n')
         mask = cv2.inRange(hsv, lower_thresh, upper_thresh)

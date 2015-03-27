@@ -4,30 +4,11 @@ import sys
 
 capture = cv2.VideoCapture()
 capture.open(0)
-#print(capture.get(int(sys.argv[1])))
-#print('MSEC', capture.get(0))
-#print('FRAMES', capture.get(1))
-#print('RATIO', capture.get(2))
-#print('WIDTH', capture.get(3))
-#print('HEIGHT', capture.get(4))
-#print('FPS', capture.get(5))
-#print('FOURCC', capture.get(6))
-#print('FRAMECOUNT', capture.get(7))
-#print('FORMAT', capture.get(8))
-#print('MODE', capture.get(9))
-capture.set(int(sys.argv[1]), float(sys.argv[2]))
-print('10:BRIGHT', capture.get(10))
-print('11:CONTRAST', capture.get(11))
-print('12:SATURATION', capture.get(12))
-print('13:HUE', capture.get(13))
-print('14:GAIN', capture.get(14))
-print('15:EXPOSURE', capture.get(15))
-
 
 nx = 640
 ny = 480
 
-kernel = np.ones((1,1),np.uint8)
+kernel = np.ones((2,2),np.uint8)
 
 while(1):
     #frame = np.zeros((nx,ny,3), np.uint8)
@@ -38,7 +19,7 @@ while(1):
     lower_white = np.array([46,25,150], dtype=np.uint8)
 
     mask = cv2.inRange(hsv, lower_white, upper_white)
-    #mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     #mask = cv2.dilate(mask, kernel)
     mom = cv2.moments(mask, True)
     if(mom['m00']==0):
