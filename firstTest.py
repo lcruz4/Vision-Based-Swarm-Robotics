@@ -1,6 +1,9 @@
 import cv2
 import numpy as np
 from socket import *
+from connSetup import *
+
+task = "circle 320,240 50"
 
 def onmouse(event, x, y, flags, param):
   if flags & cv2.EVENT_FLAG_LBUTTON:
@@ -32,11 +35,20 @@ t00 = []
 t01 = []
 t10 = []
 t11 = []
-ips = ['10.159.154.80','10.159.135.64','10.159.9.3']
-locs= [[],[],[]]
+ipF = open('ips','r')
+ips = []
+tlist = []
+for line in ipF:
+  tlist.append(line[:-1])
+  if(len(tlist)==2):
+    ips.append(tlist)
+    tlist = []
+locs= {'r1':[],'r2':[],'r3':[]}
 cv2.namedWindow('frame', 0)
 cv2.setMouseCallback("frame", onmouse)
 capture = cv2.VideoCapture()
+fourcc = cv2.cv.CV_FOURCC(*'XVID')
+out = cv2.VideoWriter('output.avi', fourcc, 20.0, (640,480))
 capture.open(0)
 redmax = open('./Maxs/redMaxs','r')
 redmin = open('./Maxs/redMins','r')
@@ -50,6 +62,9 @@ redmax.close()
 redmin.close()
 redupper = np.array([redmaxh,redmaxs,redmaxv], dtype=np.uint8)
 redlower = np.array([redminh,redmins,redminv], dtype=np.uint8)
+
+for soc in csoc:
+  csoc[soc].send(task.encode())
 
 while clickCount<4:
   ret, frame = capture.read()
@@ -76,29 +91,52 @@ while(1):
     xf = sum(i[:,0,0])/len(i[:,0,0])
     yf = sum(i[:,0,1])/len(i[:,0,1])
     cv2.circle(frame, (xf,yf), 2, (255,0,0), -1)
-    rNum = 9
-    if(xf < 100 and yf < 100 and locs[0] == []):
-      rNum = 0
-    elif(xf > 500 and yf < 100 and locs[1] == []):
-      rNum = 1
-    elif(locs[2] == []):
-      rNum = 2
-    for j in range(3):
-      if(locs[j] != []):
-        dif = [xf-locs[j][0],yf-locs[j][1]]
+    rName = '?'
+    if(count == 0):
+      if(xf < 320 and yf < 240 and locs['r1'] == []):
+        rName = 'r1'
+      elif(xf > 320 and yf < 240 and locs['r3'] == []):
+        rName = 'r3'
+      elif(locs['r2'] == []):
+        rName = 'r2'
+      else:
+        continue
+    else:
+      for name in locs:
+        if(locs[name][0]-xf < 20 and locs[name][1]-yf < 20):
+          rName = name
+      if(rName == '?'):
+        continue
+    for name in locs:
+      if(locs[name]!=[]):
+        dif = [xf-locs[name][0],yf-locs[name][1]]
         if(dif[0]<20 and dif[0]>-20 and dif[1]<20 and dif[1]>-20):
-          rNum = j
-          xf = (xf + locs[j][0])/2
-          yf = (yf + locs[j][1])/2
-    print("robot%d loc (x,y): (%f,%f)" % (rNum+1,xf,yf))
-    locs[rNum]=[xf,yf]
-    count = count + 1
-  count = 0
+          rName = name
+          xf = (xf + locs[name][0])/2
+          yf = (yf + locs[name][1])/2
+    print("robot"+rName+" loc (x,y): (%f,%f)" % (xf,yf))
+    locs[rName]=[xf,yf]
+  if(count%10 == 0):
+    for soc in csoc:
+      locxy = locs[soc]
+      locxy[0] = int(locxy[0])
+      locxy[1] = int(locxy[1])
+      strx = str(locxy[0])
+      stry = str(locxy[1])
+      while(len(strx)<3):
+        strx = "0"+strx
+      while(len(stry)<3):
+        stry = "0"+stry
+
+      csoc[soc].send((strx+","+stry).encode())
+
   cv2.circle(frame, (577,143), 2, (0,255,0), -1)
   cv2.circle(frame, (340,100), 2, (0,0,255), -1)
+  cv2.circle(frame, (XMAX/2,YMAX/2), 40, (255,0,0), 1)
   frame = cv2.resize(frame, (0,0), fx=2, fy=2)
   cv2.imshow('frame', frame)
   k = cv2.waitKey(5) & 0xFF
+  count = count + 1
   if k == 27:
     break
 
