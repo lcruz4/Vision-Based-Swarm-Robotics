@@ -36,11 +36,12 @@ iplen = len(IPlist)
 Port = 6702
 ssoc = socket(AF_INET, SOCK_STREAM)
 csoc = {}
-for i in range(iplen): #IPlist[i][1] => 'c' or 'r1' or 'r2' etc
+for i in range(iplen):
   csoc[IPlist[i][1]] = socket(AF_INET, SOCK_STREAM)
 
 ssoc.bind((myIP,Port))
 ssoc.listen(5)
+print(myName+" listening...")#DEBUG
 
 connDict = {}
 wait = True
@@ -49,6 +50,7 @@ for i in range(iplen):
     try:
       csoc[IPlist[i][1]].connect((IPlist[i][0],Port))
       wait = False
+      print(myName+" connected to "+IPlist[i][1])#DEBUG
     except:
       pass
   wait = True
@@ -66,6 +68,7 @@ i=0
 while(i<iplen):
   if(IPlist[i][0] == connectionList[i][1][0]):
     connDict[IPlist[i][1]] = connectionList[i]
+    print(myName+" accepted connection from "+IPlist[i][1])#DEBUG
     i = i + 1
 
   else:

@@ -32,11 +32,12 @@ while(minPnt == [-1,-1]):
     f[0] = int(f[0])
     f[1] = int(f[1])
     path = [None]
-
+    print(soc+" moving")#DEBUG
     pnts.remove(f)
     paths[soc] = [i,f]
     connArch[soc] = connDict.pop(soc)
     csocArch[soc] = csoc.pop(soc)
+    print(soc+" socs archived")#DEBUG
     minPnt = maxAvgDist(pnts,loc)
 
 if(len(paths) > 0):
@@ -46,6 +47,8 @@ if(len(paths) > 0):
       msg = ("ackpnt "+str(critPnts[name][0])+","
 		+str(critPnts[name][1])+" ")
       csocArch[name].send(msg.encode())
+      print("requesting ack from "+name+" at:")#DEBUG
+      print(critPnts[name])#DEBUG
       ackRemaining = ackRemaining + 1
 
 for soc in csoc:
@@ -61,6 +64,7 @@ while(ackRemaining > 0):
     except:
       pass
     if("ACK" in msg):
+      print("received ACK from "+name)#DEBUG
       ackRemaining = ackRemaining - 1
     if("ackpnt" in msg):
       while(msg[0]!="ackpnt"):
@@ -69,6 +73,8 @@ while(ackRemaining > 0):
       xy[0] = int(xy[0])
       xy[1] = int(xy[1])
       ackpnts[name] = xy
+      print("ack request from "+name+" at:")#DEBUG
+      print(xy)#DEBUG
 
 while(not arrived):
   for name in connArch:

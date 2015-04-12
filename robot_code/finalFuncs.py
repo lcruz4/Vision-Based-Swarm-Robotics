@@ -1,11 +1,13 @@
 from connSetup import *
 import sys
 from math import *
+import time
 import motor
 
 def intialize():
   ret = []
   msg = connDict['c'][0].recv(99)	#no timeout
+  print("task received "+msg)#DEBUG
   task = msg.split()		#should be "circle x,y radius"
   task[2] = int(task[2])
 
@@ -18,7 +20,28 @@ def intialize():
       dx = task[2]*cos(i*radslice)
       dy = task[2]*sin(i*radslice)
       ret.append(center[0]+dx,center[1]+dy)
+  print("points calculated:")#DEBUG
+  print(ret)#DEBUG
+  flashSeq()
   return ret
+
+def flashSeq():
+  s = myIP.split(".")
+  seq = int(s[-1])
+  print("mySeq "+seq)#DEBUG
+  bit = 0
+  t = time.time()
+  while(bit<8):
+    weight = 128>>bit
+    if(seq>weight):
+      seq = seq - weight
+      motor.ledOn()
+      time.sleep(0.1 - (time.time()-t))
+    else
+      motor.ledOff()
+      time.sleep(0.1 - (time.time()-t))
+    t = time.time()
+    bit = bit - 1
 
 def maxAvgDist(pnts,loc):
   distTot = 0
@@ -33,7 +56,10 @@ def maxAvgDist(pnts,loc):
       minPnt = p
 
   avgDist = distTot/len(pnts)
+  print("avgDist "+str(avgDist))#DEBUG
   distList = shareAvgDist(avgDist)
+  print("DistList ")#DEBUG
+  print(distList)#DEBUG
   if(avgDist==min(distList)):
     return minPnt
   else:
@@ -72,6 +98,7 @@ def shareAvgDist(dist):
   while(not done):
     if(len(distList)==len(csoc)-1):
       done = True
+      print("Done sharing avgDist")#DEBUG
       for soc in csoc:
         csoc[soc].send("done ".encode())
         for dist in distList:
@@ -123,6 +150,8 @@ def checkPaths(paths,i,f)
       if(X>=min([i[0],f[0]]) and X<=max([i[0],f[0]]) and
           Y>=min([i[1],f[1]]) and Y<=max([i[1],f[1]])):
         ret[name]=[int(X),int(Y)]
+        print("Intersection with "+name+" at:")#DEBUG
+        print(ret[name])#DEBUG
     except:
       pass
 
