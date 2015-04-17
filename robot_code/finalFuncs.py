@@ -4,6 +4,9 @@ from math import *
 import time
 import motor
 
+#This function initializes the communication sockets, receives the task,
+#calculates the destination points, flashes led sequence and returns the
+#calculated points
 def intialize():
   ret = []
   msg = connDict['c'][0].recv(99)	#no timeout
@@ -25,6 +28,8 @@ def intialize():
   flashSeq()
   return ret
 
+#calculates led sequence using the last byte of the robot's IP address
+#and flashes the sequence at XHz
 def flashSeq():
   s = myIP.split(".")
   seq = int(s[-1])
@@ -43,6 +48,13 @@ def flashSeq():
     t = time.time()
     bit = bit - 1
 
+#calculates the average distance of the robot calling the function. This
+#function takes in the list of destination points and the location of the
+#calling robot. This function will call shareAvgDist which communicates the
+#calling robot's average distance and then returns a list of all the robots'
+#average distances. It then checks if the calling robot's avg distance is the
+#max avgerage distance and returns the closest point to that robot if it is.
+#otherwise it returns [-1,-1]
 def maxAvgDist(pnts,loc):
   distTot = 0
   minPnt = [XMAX,YMAX]
@@ -65,27 +77,42 @@ def maxAvgDist(pnts,loc):
   else:
     return [-1,-1]
 
+#waits for the vision system to send the robot its location and returns it.
 def getLoc():
   while(1):
     try:
-      locxy = connDict['c'][0].recv(7)
+      msg = connDict['c'][0].recv(99)
+      msg = msg.split()
+      locxy,angle = msg[-1].split(':')
       listxy= locxy.split(',')
       listxy[0] = int(listxy[0])
       listxy[1] = int(listxy[1])
+      listxy.append(int(angle))
       return listxy
     except:
       pass
 
+def getAngle():
+  while(1):
+    try:
+      angle = connDict['c'][0].recv(3)
+      return
+
+#moves the robot forward at the given velocity
 def goForward(vel):
   motor.forward(vel)
 
+#stops the robot
 def goStop():
   motor.stop()
 
+#sets all the server sockets' timeouts to the given timeout
 def setTimeouts(timeout):
   for soc in connDict:
     connDict[soc][0].settimeout(timeout)
 
+#Shares the number value provided with all other robots. Returns a list of
+#all the robots' values.
 def shareAvgDist(dist):
   lDist = []
   lDist.append(str(dist))
@@ -136,6 +163,11 @@ def shareAvgDist(dist):
     count = count + 1
   return distList
 
+#Takes in a list of paths containing an initial and destination point, it
+#also takes the calling robot's location (inital point) and destination
+#It figures out the linear path of the robot given the two points and checks
+#for intersections with any other path. If an intersection occurs it is saved
+#in a dictionary indexed by the robot's name and returns that dictionary
 def checkPaths(paths,i,f)
   m = (f[1]-i[1])/(f[0]-i[0])
   b = i[1]-m*i[0]

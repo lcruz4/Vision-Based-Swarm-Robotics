@@ -5,9 +5,9 @@ pnts = initialize()
 connArch = {}
 csocArch = {}
 paths = {}
+ackpnts={}
 minPnt = [-1,-1]
-loc = [-1,-1]
-angle = 0
+loc = getLoc()
 path = [None]
 arrived = False
 msg = ""
@@ -19,10 +19,11 @@ setTimeouts(0.001)	#timeouts for server sockets
 #If robot has maxAvgDistance then this function returns the nearest point
 #which is the point the robot should start moving to if possible.
 minPnt = maxAvgDist(pnts,loc)
+print(minPnt)#DEBUG
 #This while loop happens as long as minPnt is not set, meaning the robot did
 #not have the maximum average distance
 while(minPnt == [-1,-1]):
-  loc[0],loc[1],angle = getLoc()	#updates location
+  loc = getLoc()	#updates location
   #This for loop checks any messages received from the other robots
   #The only possible message at this point is a path of a moving robot
   for soc in connDict:
@@ -116,25 +117,9 @@ while(not arrived):
       xy[1] = int(xy[1])
       ackpnts[name] = xy
 
-  loc[0],loc[1],angle = getLoc()	#Gets location again
-  dx = minPnt[0] - loc[0]
-  dy = minPnt[1] - loc[1]
-  theta = -(math.atan2(-dy,dx)*180/math.pi - 90)
-  if(theta<0):
-    theta = theta + 360
-  desAngle = int(theta)
-
-  if(math.fabs(desAngle - angle) < 10 or math.fabs(desAngle+360 - angle) < 10
-	or math.fabs(desAngle - (angle+360))):
-    if(math.fabs(dx) < 20 and math.fabs(dy) < 20):
-      goStop()
-    else:
-      goForward(40)
-  elif(desAngle-angle < 0):
-    pivotLeft(40)
-  else
-    pivotRight(40)
-
+  loc = getLoc()	#Gets location again
+  dxDest = math.fabs(loc[0]-minPnt[0])#dxDest is the distance from dest
+  dyDest = math.fabs(loc[1]-minPnt[1])#dyDest is the y component
   #This for loop checks if any ackpoints have passed
   for p in ackpnts:
     dxCrit = math.fabs(loc[0]-ackpnts[p][0])
@@ -142,4 +127,10 @@ while(not arrived):
     if(dxCrit < 20 and dyCrit < 20):
       csocArch[p].send("ACK ".encode())
       break
-  del ackpnts[p]
+  if(len(ackpnts)!=0 and dxCrit < 20 and dyCrit < 20):
+    del ackpnts[p]
+
+  if(dxDest < 20 and dyDest < 20):
+    goStop()
+  else:
+    goForward(40)
