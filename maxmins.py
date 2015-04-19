@@ -18,9 +18,9 @@ cv2.namedWindow("img", 0)
 cv2.setMouseCallback("img", onmouse)
 
 capture = cv2.VideoCapture()
-capture.open(0)
 capture.set(11,.1)
-print('10:BRIGHT', capture.get(11))
+capture.set(15,.1)
+capture.open(0)
 lx,ly,ux,uy = [100,100,110,110]
 click = False
 t = time.time()

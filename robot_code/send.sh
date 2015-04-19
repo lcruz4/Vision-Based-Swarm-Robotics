@@ -1,5 +1,5 @@
 #!/bin/sh
-echo -n
+echo -n "file?\n"
 read input
 
 scp "$input" root@10.159.118.36:/root/

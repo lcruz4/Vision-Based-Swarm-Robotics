@@ -5,7 +5,7 @@ import math
 from socket import *
 from connSetup import *
 
-task = "circle 320,240 50"
+task = "circle 150,200 120"
 
 def onmouse(event, x, y, flags, param):
   if flags & cv2.EVENT_FLAG_LBUTTON:
@@ -32,10 +32,10 @@ kern4 = np.ones((4,4),np.uint8)
 kern8 = np.ones((8,8),np.uint8)
 kern16= np.ones((16,16),np.uint8)
 clickCount = 0
-t00 = []
-t01 = []
-t10 = []
-t11 = []
+t00 = [120, 84]
+t01 = [502, 100]
+t10 = [20, 467]
+t11 = [632, 463]
 ledlocs = []
 tlist = []
 cv2.namedWindow('frame', 0)
@@ -88,26 +88,30 @@ blkmax.close()
 blkmin.close()
 redupper = np.array([redmaxh,redmaxs,redmaxv], dtype=np.uint8)
 redlower = np.array([redminh,redmins,redminv], dtype=np.uint8)
-seqs = []
+seqs = {}
 locs= {}
 bluloc = {}
 blkloc = {}
 for ipname in IPlist:
   locs[ipname[1]] = []
   s = ipname[0].split('.')
-  seqs.append(int(s[-1]))
+  seqs[ipname[1]] = (int(s[-1]))
 ledseq = [0,0,0,0,0]
 ledbit = [0,0,0,0,0]
 t = []
 ledoff = []
 
-while clickCount<4:
+'''while clickCount<4:
   ret, frame = capture.read()
   out.write(frame)
   cv2.imshow('frame',frame)
   k = cv2.waitKey(5) & 0xFF
   if k == 27:
-    break
+    break'''
+ret, frame = capture.read()
+cv2.imshow('frame',frame)
+k = cv2.waitKey(5) & 0xFF
+time.sleep(3)
 tpts = np.float32([t00,t01,t10,t11])
 npts = np.float32([[0,0],[640,0],[0,480],[640,480]])
 M = cv2.getPerspectiveTransform(tpts,npts)
@@ -124,14 +128,13 @@ while(seqsDone < iplen):
   ret, frame = capture.read()
   frame = cv2.warpPerspective(frame,M,(640,480))
   out.write(frame)
-  out2.write(frame)
   hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
   ledupper = np.array([ledmaxh,ledmaxs,ledmaxv], dtype=np.uint8)
   ledlower = np.array([ledminh,ledmins,ledminv], dtype=np.uint8)
   maskled = cv2.inRange(hsv, ledlower, ledupper)
   maskled = cv2.morphologyEx(maskled,cv2.MORPH_OPEN,kern2)
   maskled = cv2.morphologyEx(maskled,cv2.MORPH_CLOSE,kern2)
-  out2.write(maskled)
+  #cv2.imshow('maskled',maskled)
   c,x=cv2.findContours(maskled,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
   ccount = 1
   for i in range(len(ledoff)):
@@ -166,7 +169,7 @@ while(seqsDone < iplen):
     if(ledoff[c] and ledbit[c]<8):
       #print("led "+str(c)+" off")#DEBUGOFF
       if(time.time() - t[c] > .25*(2*ledbit[c]+3)):
-        print("bit "+str(8-ledbit[c])+" on led "+str(c)+" LOW")#DEBUG
+        print("bit "+str(7-ledbit[c])+" on led "+str(c)+" LOW")#DEBUG
         ledbit[c] = ledbit[c] + 1
 
   for bit in ledbit:
@@ -175,25 +178,31 @@ while(seqsDone < iplen):
 
   cv2.imshow('frame', frame)
   k = cv2.waitKey(5) & 0xFF
-  count = count + 1
   if k == 27:
     break
 
 c = 0
-for name in locs:
-  for i in range(len(seqs)):
-    if(ledseq[i] == seqs[c]):
+for name in seqs:
+  for i in range(len(ledseq)):
+    if(ledseq[i] == seqs[name]):
       locs[name] = ledlocs[i]
       bluloc[name] = ledlocs[i]
-      blkloc[name] = ledlocs[i]
+      #blkloc[name] = ledlocs[i]
       print("led "+str(i)+" matches seq of "+name)
       break
   c = c + 1
 
+tt = time.time()
+while time.time()-tt < 1:
+  ret, frame = capture.read()
+  cv2.imshow('frame',frame)
+  k = cv2.waitKey(5) & 0xFF
+  if k == 27:
+    break
+
 while(1):
   ret, frame = capture.read()
   frame = cv2.warpPerspective(frame,M,(640,480))
-  out.write(frame)
   hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
   redupper = np.array([redmaxh,redmaxs,redmaxv], dtype=np.uint8)
@@ -204,76 +213,105 @@ while(1):
   blulower = np.array([bluminh,blumins,bluminv], dtype=np.uint8)
   maskblu = cv2.inRange(hsv, blulower, bluupper)
   maskblu = cv2.morphologyEx(maskblu,cv2.MORPH_OPEN,kern2)
-  blkupper = np.array([blkmaxh,blkmaxs,blkmaxv], dtype=np.uint8)
-  blklower = np.array([blkminh,blkmins,blkminv], dtype=np.uint8)
-  maskblk = cv2.inRange(hsv, blklower, blkupper)
-  maskblk = cv2.morphologyEx(maskblk,cv2.MORPH_OPEN,kern2)
-  cv2.imshow('maskred',maskred)
+#  blkupper = np.array([blkmaxh,blkmaxs,blkmaxv], dtype=np.uint8)
+#  blklower = np.array([blkminh,blkmins,blkminv], dtype=np.uint8)
+#  maskblk = cv2.inRange(hsv, blklower, blkupper)
+#  maskblk = cv2.morphologyEx(maskblk,cv2.MORPH_OPEN,kern2)
+  cv2.imshow('redmask',maskred)
+  cv2.imshow('maskblu',maskblu)
+  out2.write(maskblu)
   c,x=cv2.findContours(maskred,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
   cblu,x=cv2.findContours(maskblu,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-  cblk,x=cv2.findContours(maskblk,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+#  cblk,x=cv2.findContours(maskblk,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
   for i in c:
     xf = sum(i[:,0,0])/len(i[:,0,0])
     yf = sum(i[:,0,1])/len(i[:,0,1])
-    cv2.circle(frame, (xf,yf), 2, (255,0,0), -1)
     rName = '?'
     for name in locs:
-      if(locs[name][0]-xf < 20 and locs[name][1]-yf < 20):
+      if(math.fabs(locs[name][0]-xf) < 25 and
+	math.fabs(locs[name][1]-yf) < 25):
         rName = name
     if(rName == '?'):
       continue
-    for name in locs:
-      dif = [xf-locs[name][0],yf-locs[name][1]]
-      if(dif[0]<20 and dif[0]>-20 and dif[1]<20 and dif[1]>-20):
-        rName = name
-        xf = (xf + locs[name][0])/2
-        yf = (yf + locs[name][1])/2
+#    for name in locs:
+#      dif = [xf-locs[name][0],yf-locs[name][1]]
+#      if(dif[0]<25 and dif[0]>-25 and dif[1]<25 and dif[1]>-25):
+#        rName = name
+#        xf = (xf + locs[name][0])/2
+#        yf = (yf + locs[name][1])/2
     locs[rName]=[xf,yf]
+    if(rName == 'r1'):
+      cv2.circle(frame, (xf,yf), 3, (255,0,0), -1)
+      #cv2.circle(frame, (xf,yf), 44, (255,0,0), 1)
+    if(rName == 'r2'):
+      cv2.circle(frame, (xf,yf), 3, (0,255,0), -1)
+      #cv2.circle(frame, (xf,yf), 44, (0,255,0), 1)
+    if(rName == 'r3'):
+      cv2.circle(frame, (xf,yf), 3, (0,0,255), -1)
+      #cv2.circle(frame, (xf,yf), 44, (0,0,255), 1)
+    if(rName == 'r4'):
+      cv2.circle(frame, (xf,yf), 3, (0,0,0), -1)
+      #cv2.circle(frame, (xf,yf), 44, (0,0,0), 1)
+    if(rName == 'r5'):
+      cv2.circle(frame, (xf,yf), 3, (255,255,255), -1)
+      #cv2.circle(frame, (xf,yf), 44, (255,255,255), 1)
 
   for i in cblu:
     xf = sum(i[:,0,0])/len(i[:,0,0])
     yf = sum(i[:,0,1])/len(i[:,0,1])
     rName = '?'
     for name in bluloc:
-      if(bluloc[name][0]-xf < 20 and bluloc[name][1]-yf < 20):
-        rName = name
+      if(count < 10):
+        if(math.fabs(locs[name][0]-xf) < 45 and
+	  math.fabs(locs[name][1]-yf) < 45):
+          rName = name
+      else:
+        if(math.fabs(bluloc[name][0]-xf) < 10 and
+	  math.fabs(bluloc[name][1]-yf) < 10):
+          rName = name
     if(rName == '?'):
       continue
     bluloc[rName]=[xf,yf]
+    cv2.line(frame,tuple(bluloc[rName]),tuple(locs[rName]),(0,0,0))
 
-  for i in cblk:
-    xf = sum(i[:,0,0])/len(i[:,0,0])
-    yf = sum(i[:,0,1])/len(i[:,0,1])
-    rName = '?'
-    for name in blkloc:
-      if(blkloc[name][0]-xf < 20 and blkloc[name][1]-yf < 20):
-        rName = name
-    if(rName == '?'):
-      continue
-    blkloc[rName]=[xf,yf]
+#  for i in cblk:
+#    xf = sum(i[:,0,0])/len(i[:,0,0])
+#    yf = sum(i[:,0,1])/len(i[:,0,1])
+#    rName = '?'
+#    for name in blkloc:
+#      if(blkloc[name][0]-xf < 20 and blkloc[name][1]-yf < 20):
+#        rName = name
+#    if(rName == '?'):
+#      continue
+#    blkloc[rName]=[xf,yf]
 
-  if(count%10 == 0):
-    for soc in csoc:
-      locxy = locs[soc]
-      locxy[0] = int(locxy[0])
-      locxy[1] = int(locxy[1])
-      strx = str(locxy[0])
-      stry = str(locxy[1])
-      while(len(strx)<3):#no longer necessary
-        strx = "0"+strx	 #
-      while(len(stry)<3):#
-        stry = "0"+stry  #
+#  if(count%5 == 0):
+  for soc in csoc:
+    locxy = locs[soc]
+    locxy[0] = int(locxy[0])
+    locxy[1] = int(locxy[1])
+    strx = str(locxy[0])
+    stry = str(locxy[1])
+    while(len(strx)<3):#no longer necessary
+      strx = "0"+strx	 #
+    while(len(stry)<3):#
+      stry = "0"+stry  #
 
-      dx = bluloc[soc][0] - blkloc[soc][0]
-      dy = bluloc[soc][1] - blkloc[soc][1]
-      theta = -(math.atan2(-dy,dx)*180/math.pi - 90)
-      if(theta<0):
-        theta = theta + 360
-      angle = str(int(theta))
+    dx = locs[soc][0] - bluloc[soc][0]
+    dy = locs[soc][1] - bluloc[soc][1]
+    theta = -(math.atan2(-dy,dx)*180/math.pi - 90)
+    if(theta<0):
+      theta = theta + 360
+    angle = str(int(theta))
 
-      csoc[soc].send((strx+","+stry+":"+angle+" ").encode())
+    csoc[soc].send((strx+","+stry+":"+angle+" ").encode())
 
-  frame = cv2.resize(frame, (0,0), fx=2, fy=2)
+  cv2.circle(frame, (270,200), 20, (255,255,255), 1)
+  cv2.circle(frame, (150,320), 20, (255,255,255), 1)
+  cv2.circle(frame, (30,200), 20, (255,255,255), 1)
+  cv2.circle(frame, (150,80), 20, (255,255,255), 1)
+#  cv2.circle(frame, (279,269), 20, (255,255,255), 1)
+  out.write(frame)
   cv2.imshow('frame', frame)
   k = cv2.waitKey(5) & 0xFF
   count = count + 1

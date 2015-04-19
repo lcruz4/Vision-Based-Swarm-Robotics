@@ -7,7 +7,7 @@ import motor
 #This function initializes the communication sockets, receives the task,
 #calculates the destination points, flashes led sequence and returns the
 #calculated points
-def intialize():
+def initialize():
   ret = []
   msg = connDict['c'][0].recv(99)	#no timeout
   print("task received "+msg)#DEBUG
@@ -19,10 +19,10 @@ def intialize():
     center = task[1].split(",")
     center[0] = int(center[0])
     center[1] = int(center[1])
-    for i in IPlen:
+    for i in range(iplen):
       dx = task[2]*cos(i*radslice)
       dy = task[2]*sin(i*radslice)
-      ret.append(center[0]+dx,center[1]+dy)
+      ret.append([int(center[0]+dx),int(center[1]+dy)])
   print("points calculated:")#DEBUG
   print(ret)#DEBUG
   flashSeq()
@@ -33,20 +33,24 @@ def intialize():
 def flashSeq():
   s = myIP.split(".")
   seq = int(s[-1])
-  print("mySeq "+seq)#DEBUG
+  print("mySeq "+str(seq))#DEBUG
   bit = 0
+  motor.ledOn()
+  time.sleep(0.5)
+  motor.ledOff()
   t = time.time()
   while(bit<8):
     weight = 128>>bit
-    if(seq>weight):
+    if(seq>=weight):
       seq = seq - weight
       motor.ledOn()
-      time.sleep(0.1 - (time.time()-t))
-    else
+      time.sleep(0.5 - (time.time()-t))
+    else:
       motor.ledOff()
-      time.sleep(0.1 - (time.time()-t))
+      time.sleep(0.5 - (time.time()-t))
     t = time.time()
-    bit = bit - 1
+    bit = bit + 1
+  motor.ledOff()
 
 #calculates the average distance of the robot calling the function. This
 #function takes in the list of destination points and the location of the
@@ -65,14 +69,14 @@ def maxAvgDist(pnts,loc):
     minDist = sqrt(pow(minPnt[0],2)+pow(minPnt[1],2))
     distTot = distTot + dist
     if(dist < minDist):
-      minPnt = p
+      minPnt = [int(p[0]),int(p[1])]
 
   avgDist = distTot/len(pnts)
   print("avgDist "+str(avgDist))#DEBUG
   distList = shareAvgDist(avgDist)
   print("DistList ")#DEBUG
   print(distList)#DEBUG
-  if(avgDist==min(distList)):
+  if(int(avgDist)==max(distList)):
     return minPnt
   else:
     return [-1,-1]
@@ -92,19 +96,21 @@ def getLoc():
     except:
       pass
 
-def getAngle():
-  while(1):
-    try:
-      angle = connDict['c'][0].recv(3)
-      return
-
 #moves the robot forward at the given velocity
 def goForward(vel):
-  motor.forward(vel)
+  #motor.forward(vel)
+  print("GOING FORWARD!!")
 
 #stops the robot
 def goStop():
-  motor.stop()
+  #motor.stop()
+  print("STOP!!")
+
+def pivotRight():
+  print("PIVOT RIGHT!!!")
+
+def pivotLeft():
+  print("PIVOT LEFT!!!")
 
 #sets all the server sockets' timeouts to the given timeout
 def setTimeouts(timeout):
@@ -115,15 +121,18 @@ def setTimeouts(timeout):
 #all the robots' values.
 def shareAvgDist(dist):
   lDist = []
-  lDist.append(str(dist))
+  dist = str(int(dist))
+  lDist.append(int(dist))
   distList = []
-  distList.append(dist)
-  nameList = [i[1] for i in IPlist]
+  distList.append(int(dist))
+  nameList = [name for name in connDict]
+  nameList.remove('c')
+#  print("len connDict:%d\nlen nameList:%d",%(len(connDict),len(nameList)))
   done = False
   count = 0
 
   while(not done):
-    if(len(distList)==len(csoc)-1):
+    if(len(distList)==len(connDict)):
       done = True
       print("Done sharing avgDist")#DEBUG
       for soc in csoc:
@@ -132,26 +141,28 @@ def shareAvgDist(dist):
           csoc[soc].send((str(dist)+" ").encode())
     else:
       for dist in distList:
-        csoc[nameList[count%len(csoc)-1]].send((str(dist)+" ").encode())
+        csoc[nameList[count%len(nameList)]].send((str(dist)+" ").encode())
 
     for soc in connDict:
       try:
-        sDist = connDict[soc][0].recv(99)
-        lDist = sDist.split()
+        if(soc != 'c'):
+          sDist = connDict[soc][0].recv(99)
+          lDist = sDist.split()
       except:
         pass
-      if(lDist[0]=="done"):
+      if("done" in lDist):
         lDist.remove("done")
         for dist in lDist:
           if(not (int(dist) in distList)):
             distList.append(int(dist))
-        while(len(distList)<len(csoc)-1):
+        while(len(distList)<len(connDict)):
           try:
-            sDist = connDict[soc][0].recv(99)
-            lDist = sDist.split()
-            for dist in lDist:
-              if(not (int(dist) in distList)):
-                distList.append(int(dist))
+            if(soc != 'c'):
+              sDist = connDict[soc][0].recv(99)
+              lDist = sDist.split()
+              for dist in lDist:
+                if(not (int(dist) in distList)):
+                  distList.append(int(dist))
           except:
             pass
         done = True
@@ -160,6 +171,7 @@ def shareAvgDist(dist):
         for dist in lDist:
           if(not (int(dist) in distList)):
             distList.append(int(dist))
+    print(distList)#DEBUG
     count = count + 1
   return distList
 
@@ -168,7 +180,7 @@ def shareAvgDist(dist):
 #It figures out the linear path of the robot given the two points and checks
 #for intersections with any other path. If an intersection occurs it is saved
 #in a dictionary indexed by the robot's name and returns that dictionary
-def checkPaths(paths,i,f)
+def checkPaths(paths,i,f):
   m = (f[1]-i[1])/(f[0]-i[0])
   b = i[1]-m*i[0]
   ret = {}

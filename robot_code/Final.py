@@ -5,9 +5,10 @@ pnts = initialize()
 connArch = {}
 csocArch = {}
 paths = {}
+ackpnts={}
 minPnt = [-1,-1]
-loc = [-1,-1]
-angle = 0
+loc = [0,0]
+loc[0],loc[1],angle = getLoc()
 path = [None]
 arrived = False
 msg = ""
@@ -19,6 +20,7 @@ setTimeouts(0.001)	#timeouts for server sockets
 #If robot has maxAvgDistance then this function returns the nearest point
 #which is the point the robot should start moving to if possible.
 minPnt = maxAvgDist(pnts,loc)
+print(minPnt)#DEBUG
 #This while loop happens as long as minPnt is not set, meaning the robot did
 #not have the maximum average distance
 while(minPnt == [-1,-1]):
@@ -28,12 +30,19 @@ while(minPnt == [-1,-1]):
   for soc in connDict:
     try:
       msg = connDict[soc][0].recv(99)
+      print("from "+soc+" received: "+msg)#DEBUG
       path = msg.split()
+      if("i" in path and "f" in path):
+        break
     except:
       pass
   #This checks that the message received was in fact a path and extracts the
   #necessary information
-  if(path[0]=="i" and path[2]=="f"):
+  if("i" in path and "f" in path):
+    while(path[0]!="i"):
+      print(path[0])
+      del path[0]
+    print("HERE")#DEBUG
     i = path[1].split(",")
     i[0] = int(i[0])	#i is the initial point of the moving robot
     i[1] = int(i[1])
@@ -74,6 +83,9 @@ if(len(paths) > 0):
 #after sending ack requests the robot must let all other robots know that it
 #has a destination and will potentially start moving soon
 for soc in csoc:	#sends its path to all robots that are not moving
+  print("sent path to " + soc)#DEBUG
+  print(loc)#DEBUG
+  print(minPnt)#DEBUG
   msg = ("i "+str(loc[0])+","+str(loc[1])+" f "
 	+str(minPnt[0])+","+str(minPnt[1])+" ")
   csoc[soc].send(msg.encode())	#i ix,iy f fx,fy
@@ -124,15 +136,15 @@ while(not arrived):
     theta = theta + 360
   desAngle = int(theta)
 
-  if(math.fabs(desAngle - angle) < 10 or math.fabs(desAngle+360 - angle) < 10
-	or math.fabs(desAngle - (angle+360))):
+  if(math.fabs(desAngle-angle) < 10 or math.fabs(desAngle+360-angle) < 10
+	or math.fabs(desAngle-(angle+360))):
     if(math.fabs(dx) < 20 and math.fabs(dy) < 20):
       goStop()
     else:
       goForward(40)
   elif(desAngle-angle < 0):
     pivotLeft(40)
-  else
+  else:
     pivotRight(40)
 
   #This for loop checks if any ackpoints have passed
@@ -142,4 +154,5 @@ while(not arrived):
     if(dxCrit < 20 and dyCrit < 20):
       csocArch[p].send("ACK ".encode())
       break
-  del ackpnts[p]
+  if(len(ackpnts)!=0 and dxCrit < 20 and dyCrit < 20):
+    del ackpnts[p]
