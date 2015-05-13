@@ -10,6 +10,7 @@ import motor
 def initialize():
   ret = []
   msg = connDict['c'][0].recv(99)	#no timeout
+  print("task received "+msg)#DEBUG
   task = msg.split()		#should be "circle x,y radius"
   task[2] = int(task[2])
 
@@ -60,19 +61,20 @@ def flashSeq():
 #otherwise it returns [-1,-1]
 def maxAvgDist(pnts,loc):
   distTot = 0
-  minPnt = pnts[0]
+  minPnt = [XMAX,YMAX]
   for p in pnts:
     xdist = fabs(p[0] - loc[0])
     ydist = fabs(p[1] - loc[1])
     dist = sqrt(pow(xdist,2)+pow(ydist,2))
-    minDist = sqrt(pow(minPnt[0]-loc[0],2)+pow(minPnt[1]-loc[1],2))
+    minDist = sqrt(pow(minPnt[0],2)+pow(minPnt[1],2))
     distTot = distTot + dist
     if(dist < minDist):
       minPnt = [int(p[0]),int(p[1])]
 
   avgDist = distTot/len(pnts)
+  print("avgDist "+str(avgDist))#DEBUG
   distList = shareAvgDist(avgDist)
-  print("DistList: ")#DEBUG
+  print("DistList ")#DEBUG
   print(distList)#DEBUG
   if(int(avgDist)==max(distList)):
     return minPnt
@@ -96,20 +98,18 @@ def getLoc():
 
 #moves the robot forward at the given velocity
 def goForward(vel):
-  motor.forward(vel)
+  #motor.forward(vel)
   print("GOING FORWARD!!")
 
 #stops the robot
 def goStop():
-  motor.stop()
+  #motor.stop()
   print("STOP!!")
 
-def pivotRight(vel):
-  motor.spin_right(vel)
+def pivotRight():
   print("PIVOT RIGHT!!!")
 
-def pivotLeft(vel):
-  motor.spin_left(vel)
+def pivotLeft():
   print("PIVOT LEFT!!!")
 
 #sets all the server sockets' timeouts to the given timeout
@@ -130,12 +130,6 @@ def shareAvgDist(dist):
 #  print("len connDict:%d\nlen nameList:%d",%(len(connDict),len(nameList)))
   done = False
   count = 0
-
-  for soc in connDict:
-    try:
-      connDict[soc][0].recv(99)
-    except:
-      pass
 
   while(not done):
     if(len(distList)==len(connDict)):
@@ -177,6 +171,7 @@ def shareAvgDist(dist):
         for dist in lDist:
           if(not (int(dist) in distList)):
             distList.append(int(dist))
+    print(distList)#DEBUG
     count = count + 1
   return distList
 

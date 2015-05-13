@@ -14,15 +14,13 @@ arrived = False
 msg = ""
 xdif = 0
 ydif = 0
-oldangle = 0
-speed = 20
 ackRemaining = 0
 
 setTimeouts(0.001)	#timeouts for server sockets
 #If robot has maxAvgDistance then this function returns the nearest point
 #which is the point the robot should start moving to if possible.
 minPnt = maxAvgDist(pnts,loc)
-#print(minPnt)#DEBUGOFF
+print(minPnt)#DEBUG
 #This while loop happens as long as minPnt is not set, meaning the robot did
 #not have the maximum average distance
 while(minPnt == [-1,-1]):
@@ -44,6 +42,7 @@ while(minPnt == [-1,-1]):
     while(path[0]!="i"):
       print(path[0])
       del path[0]
+    print("HERE")#DEBUG
     i = path[1].split(",")
     i[0] = int(i[0])	#i is the initial point of the moving robot
     i[1] = int(i[1])
@@ -58,7 +57,7 @@ while(minPnt == [-1,-1]):
     #The next two lines archive the socket connections with the moving robot
     connArch[soc] = connDict.pop(soc)
     csocArch[soc] = csoc.pop(soc)
-    #print(soc+" socs archived")#DEBUGOFF
+    print(soc+" socs archived")#DEBUG
     minPnt = maxAvgDist(pnts,loc)	#call maxAvgDist again and loop again
 
 #Once outside the loop the robot has a destination point and must figure out
@@ -84,11 +83,13 @@ if(len(paths) > 0):
 #after sending ack requests the robot must let all other robots know that it
 #has a destination and will potentially start moving soon
 for soc in csoc:	#sends its path to all robots that are not moving
+  print("sent path to " + soc)#DEBUG
+  print(loc)#DEBUG
+  print(minPnt)#DEBUG
   msg = ("i "+str(loc[0])+","+str(loc[1])+" f "
 	+str(minPnt[0])+","+str(minPnt[1])+" ")
   csoc[soc].send(msg.encode())	#i ix,iy f fx,fy
-print(myName+" goes to point:")
-print(minPnt)
+
 #Now the robot must wait for any acks that it requested before moving
 while(ackRemaining > 0):
   for name in connArch:
@@ -100,7 +101,6 @@ while(ackRemaining > 0):
     if("ACK" in msg):#if an ack is received ackRemaining will be decremented
       print("received ACK from "+name)#DEBUG
       ackRemaining = ackRemaining - 1
-      time.sleep(1)
     if("ackpnt" in msg):#if an ack request is received it will be processed
       while(msg[0]!="ackpnt"):
         del msg[0]	#clean leftovers
@@ -135,31 +135,18 @@ while(not arrived):
   if(theta<0):
     theta = theta + 360
   desAngle = int(theta)
-  print("desAngle:"+str(desAngle)+"	Angle:"+str(angle))
-  if(math.fabs(desAngle-angle) < 20 or math.fabs(desAngle+360-angle) < 20
-	or math.fabs(desAngle-(angle+360)) < 20):
+
+  if(math.fabs(desAngle-angle) < 10 or math.fabs(desAngle+360-angle) < 10
+	or math.fabs(desAngle-(angle+360))):
     if(math.fabs(dx) < 20 and math.fabs(dy) < 20):
       goStop()
-      arrived = True
     else:
-      goForward(50)
+      goForward(40)
+  elif(desAngle-angle < 0):
+    pivotLeft(40)
   else:
-    if(math.fabs(angle-oldangle) < 5):
-      speed = speed+1
-    else:
-      speed = speed-1
-    if(speed > 60):
-      speed = 60
-    if(desAngle < angle):
-      if(desAngle-angle < -180 or desAngle-angle > 180):
-        pivotRight(speed)
-      else:
-        pivotLeft(speed)
-    else:
-      if(desAngle-angle < -180 or desAngle-angle > 180):
-        pivotLeft(speed)
-      else:
-        pivotRight(speed)
+    pivotRight(40)
+
   #This for loop checks if any ackpoints have passed
   for p in ackpnts:
     dxCrit = math.fabs(loc[0]-ackpnts[p][0])
@@ -169,7 +156,3 @@ while(not arrived):
       break
   if(len(ackpnts)!=0 and dxCrit < 20 and dyCrit < 20):
     del ackpnts[p]
-  oldangle = angle
-
-while(1):
-  pass
